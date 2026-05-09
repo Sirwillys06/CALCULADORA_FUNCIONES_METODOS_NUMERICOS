@@ -10,720 +10,752 @@ from metodos import (
     metodo_simpson_abierto
 )
 
+# ────────────────────────────────────────────────
+#  PALETA DE COLORES — TECH DARK / NEON CYAN
+# ────────────────────────────────────────────────
+C = {
+    # Fondos
+    "bg_app":         "#060a0f",   # negro casi puro con tinte azul
+    "bg_card":        "#0a1018",   # card ligeramente más clara
+    "bg_input":       "#060a0f",   # input igual que fondo app
+    "bg_result":      "#040709",   # consola / resultado
+
+    # Bordes
+    "border":         "#111d2b",
+    "border_hi":      "#1b2e45",
+    "border_accent":  "#0e4a6e",   # borde activo/focus
+
+    # Acento principal — cian eléctrico
+    "accent":         "#00d4ff",
+    "accent_dim":     "#0099cc",
+    "accent_glow":    "#003d5c",   # fondo sutil detrás del acento
+
+    # Texto
+    "text_hi":        "#e8f4ff",
+    "text_mid":       "#7fa8cc",
+    "text_low":       "#2e4a63",
+
+    # Verde para estado habilitado
+    "green":          "#00ff88",
+    "green_dim":      "#003d20",
+    "green_border":   "#00663a",
+
+    # Rojo para limpiar
+    "red_text":       "#ff4d6a",
+    "red_border":     "#3d1220",
+    "red_hover":      "#ff7088",
+
+    # Chips / pills
+    "chip_bg":        "#080e16",
+    "chip_border":    "#111d2b",
+    "chip_active_bg": "#071828",
+    "chip_active_fg": "#00d4ff",
+    "chip_active_bd": "#0e4a6e",
+
+    # Separador decorativo
+    "sep_line":       "#0d1e30",
+}
+
 
 def iniciar_interfaz():
 
-    # ---------------- VENTANA PRINCIPAL ----------------
+    # ────────────────────────────────────────────────
+    #  VENTANA PRINCIPAL
+    # ────────────────────────────────────────────────
 
     ventana = tk.Tk()
-
-    ventana.title("Calculadora de Métodos Numéricos")
-
-    ventana.geometry("1000x1500")
-
-    ventana.configure(bg="#0f172a")
-
+    ventana.title("Métodos Numéricos — Integración")
+    ventana.geometry("860x960")
+    ventana.configure(bg=C["bg_app"])
     ventana.resizable(False, False)
 
-    # ---------------- ESTILOS COMBOBOX ----------------
+    # ────────────────────────────────────────────────
+    #  ESTILO COMBOBOX
+    # ────────────────────────────────────────────────
 
     style = ttk.Style()
-
     style.theme_use("clam")
-
     style.configure(
-        "TCombobox",
-        fieldbackground="#1e293b",
-        background="#1e293b",
-        foreground="white",
-        bordercolor="#38bdf8",
-        lightcolor="#38bdf8",
-        darkcolor="#38bdf8",
-        arrowcolor="white",
-        padding=8
+        "Dark.TCombobox",
+        fieldbackground=C["bg_input"],
+        background=C["bg_input"],
+        foreground=C["text_mid"],
+        bordercolor=C["border_accent"],
+        lightcolor=C["border_accent"],
+        darkcolor=C["border_accent"],
+        arrowcolor=C["accent_dim"],
+        selectbackground=C["bg_input"],
+        selectforeground=C["accent"],
+        padding=10,
+        relief="flat"
+    )
+    style.map(
+        "Dark.TCombobox",
+        fieldbackground=[("readonly", C["bg_input"])],
+        foreground=[("readonly", C["text_mid"])],
+        background=[("readonly", C["bg_input"])]
     )
 
-    # ---------------- TITULO ----------------
+    # ────────────────────────────────────────────────
+    #  HELPER: separador decorativo con línea
+    # ────────────────────────────────────────────────
 
-    titulo = tk.Label(
-        ventana,
-        text="CALCULADORA DE MÉTODOS NUMÉRICOS",
-        font=("Segoe UI", 24, "bold"),
-        bg="#0f172a",
-        fg="#38bdf8"
-    )
+    def separador(parent, pady=(0, 0)):
+        linea = tk.Frame(parent, bg=C["sep_line"], height=1)
+        linea.pack(fill="x", padx=0, pady=pady)
 
-    titulo.pack(pady=(25, 5))
+    # ────────────────────────────────────────────────
+    #  HELPER: card con borde izquierdo accent
+    # ────────────────────────────────────────────────
 
-    # ---------------- SUBTITULO ----------------
+    def card(parent, pady=(0, 10), accent_left=False):
+        outer = tk.Frame(
+            parent,
+            bg=C["border_hi"],       # borde exterior (1 px)
+            bd=0
+        )
+        outer.pack(fill="x", padx=26, pady=pady)
 
-    subtitulo = tk.Label(
-        ventana,
-        text="Software de Integración Numérica",
-        font=("Segoe UI", 11),
-        bg="#0f172a",
-        fg="#94a3b8"
-    )
+        if accent_left:
+            # Barra cian de 3 px a la izquierda
+            accent_bar = tk.Frame(outer, bg=C["accent"], width=3)
+            accent_bar.pack(side="left", fill="y")
 
-    subtitulo.pack()
+        marco = tk.Frame(outer, bg=C["bg_card"], bd=0)
+        marco.pack(fill="x", expand=True)
 
-    # ---------------- FRAME PRINCIPAL ----------------
+        inner = tk.Frame(marco, bg=C["bg_card"])
+        inner.pack(fill="x", padx=22, pady=18)
+        return inner
 
-    frame_principal = tk.Frame(
-        ventana,
-        bg="#111827"
-    )
+    # ────────────────────────────────────────────────
+    #  HELPER: micro-etiqueta de sección
+    # ────────────────────────────────────────────────
 
-    frame_principal.pack(
-        pady=25,
-        padx=30,
-        fill="both",
-        expand=True
-    )
+    def section_label(parent, texto, icon=""):
+        row = tk.Frame(parent, bg=C["bg_card"])
+        row.pack(fill="x", pady=(0, 8))
 
-    # ---------------- METODOS ----------------
+        if icon:
+            tk.Label(
+                row,
+                text=icon,
+                font=("Consolas", 9),
+                bg=C["bg_card"],
+                fg=C["accent_dim"],
+                padx=0
+            ).pack(side="left")
 
-    label_metodo = tk.Label(
-        frame_principal,
-        text="Seleccione un método:",
-        font=("Segoe UI", 12, "bold"),
-        bg="#111827",
-        fg="white"
-    )
+        tk.Label(
+            row,
+            text=f"  {texto}" if icon else texto,
+            font=("Consolas", 8, "bold"),
+            bg=C["bg_card"],
+            fg=C["text_low"]
+        ).pack(side="left")
 
-    label_metodo.pack(pady=(20, 10))
+        # línea decorativa después del texto
+        tk.Frame(row, bg=C["sep_line"], height=1).pack(
+            side="left", fill="x", expand=True, padx=(10, 0), pady=1
+        )
+
+    # ────────────────────────────────────────────────
+    #  HELPER: campo de entrada estándar
+    # ────────────────────────────────────────────────
+
+    def make_entry(parent, placeholder=""):
+        e = tk.Entry(
+            parent,
+            font=("Consolas", 12),
+            bg=C["bg_input"],
+            fg=C["text_mid"],
+            insertbackground=C["accent"],
+            relief="flat",
+            bd=0,
+            highlightbackground=C["border_hi"],
+            highlightthickness=1,
+            highlightcolor=C["accent"]
+        )
+        e.configure(width=1)
+
+        # Focus glow
+        e.bind("<FocusIn>",  lambda ev, w=e: w.config(highlightbackground=C["border_accent"], fg=C["text_hi"]))
+        e.bind("<FocusOut>", lambda ev, w=e: w.config(highlightbackground=C["border_hi"],     fg=C["text_mid"]))
+        return e
+
+    # ────────────────────────────────────────────────
+    #  ENCABEZADO
+    # ────────────────────────────────────────────────
+
+    header_wrap = tk.Frame(ventana, bg=C["bg_app"])
+    header_wrap.pack(fill="x", padx=26, pady=(28, 18))
+
+    # Línea superior decorativa
+    top_bar = tk.Frame(header_wrap, bg=C["accent"], height=2)
+    top_bar.pack(fill="x")
+
+    header = tk.Frame(header_wrap, bg=C["bg_card"],
+                      highlightbackground=C["border_hi"], highlightthickness=1)
+    header.pack(fill="x")
+
+    inner_h = tk.Frame(header, bg=C["bg_card"])
+    inner_h.pack(fill="x", padx=22, pady=18)
+
+    # Columna izquierda (textos)
+    left_h = tk.Frame(inner_h, bg=C["bg_card"])
+    left_h.pack(side="left", fill="both", expand=True)
+
+    badge_row = tk.Frame(left_h, bg=C["bg_card"])
+    badge_row.pack(anchor="w")
+
+    tk.Label(
+        badge_row,
+        text="◆",
+        font=("Consolas", 8),
+        bg=C["accent_glow"],
+        fg=C["accent"],
+        padx=6, pady=4,
+        relief="flat"
+    ).pack(side="left")
+
+    tk.Label(
+        badge_row,
+        text="  INTEGRACIÓN NUMÉRICA  v1.0",
+        font=("Consolas", 8, "bold"),
+        bg=C["accent_glow"],
+        fg=C["accent"],
+        padx=8, pady=4,
+        relief="flat"
+    ).pack(side="left")
+
+    tk.Label(
+        left_h,
+        text="Calculadora de Métodos Numéricos",
+        font=("Segoe UI", 21, "bold"),
+        bg=C["bg_card"],
+        fg=C["text_hi"]
+    ).pack(anchor="w", pady=(10, 2))
+
+    tk.Label(
+        left_h,
+        text="Trapecio  ·  Simpson 1/3  ·  Simpson 3/8  ·  Boole  ·  Abierto",
+        font=("Consolas", 9),
+        bg=C["bg_card"],
+        fg=C["text_low"]
+    ).pack(anchor="w")
+
+    # Columna derecha (indicador live)
+    right_h = tk.Frame(inner_h, bg=C["bg_card"])
+    right_h.pack(side="right", anchor="ne")
+
+    tk.Label(
+        right_h,
+        text="● SISTEMA ACTIVO",
+        font=("Consolas", 8),
+        bg=C["bg_card"],
+        fg=C["green"]
+    ).pack(anchor="e")
+
+    tk.Label(
+        right_h,
+        text="CÁLCULO NUMÉRICO",
+        font=("Consolas", 8),
+        bg=C["bg_card"],
+        fg=C["text_low"]
+    ).pack(anchor="e", pady=(4, 0))
+
+    # ────────────────────────────────────────────────
+    #  CARD 1 — MÉTODO + FUNCIÓN
+    # ────────────────────────────────────────────────
+
+    c1 = card(ventana, pady=(0, 8), accent_left=True)
+
+    section_label(c1, "MÉTODO DE INTEGRACIÓN", icon="⚙")
 
     metodos = [
         "Trapecio",
-        "Jorge Boole",
-        "Simpson 3/8",
         "Simpson 1/3",
+        "Simpson 3/8",
+        "Jorge Boole",
         "Simpson Abierto"
     ]
 
     combo_metodos = ttk.Combobox(
-        frame_principal,
+        c1,
         values=metodos,
-        font=("Segoe UI", 11),
-        width=35,
-        state="readonly"
+        font=("Consolas", 11),
+        state="readonly",
+        style="Dark.TCombobox"
     )
-
-    combo_metodos.pack()
-
+    combo_metodos.pack(fill="x")
     combo_metodos.current(0)
 
-    # ---------------- FRAME DATOS ----------------
+    # — Función f(x)
+    tk.Frame(c1, bg=C["bg_card"], height=16).pack()
+    section_label(c1, "FUNCIÓN  f(x)", icon="ƒ")
 
-    frame_datos = tk.Frame(
-        frame_principal,
-        bg="#111827"
+    # Marco con borde accent para el entry de función
+    func_frame = tk.Frame(
+        c1,
+        bg=C["border_accent"],
+        highlightbackground=C["accent"],
+        highlightthickness=0,
+        bd=1
     )
-
-    frame_datos.pack(pady=30)
-
-    # ---------------- ESTILOS ----------------
-
-    estilo_label = {
-        "font": ("Segoe UI", 11),
-        "bg": "#111827",
-        "fg": "white"
-    }
-
-    estilo_entry = {
-        "font": ("Segoe UI", 11),
-        "bg": "#1e293b",
-        "fg": "white",
-        "insertbackground": "white",
-        "relief": "flat",
-        "width": 35,
-        "bd": 8
-    }
-
-    # ---------------- FUNCION ----------------
-
-    label_funcion = tk.Label(
-        frame_datos,
-        text="Función f(x):",
-        **estilo_label
-    )
-
-    label_funcion.grid(
-        row=0,
-        column=0,
-        padx=15,
-        pady=15,
-        sticky="w"
-    )
+    func_frame.pack(fill="x")
 
     entrada_funcion = tk.Entry(
-        frame_datos,
-        **estilo_entry
+        func_frame,
+        font=("Consolas", 14),
+        bg=C["accent_glow"],
+        fg=C["accent"],
+        insertbackground=C["accent"],
+        relief="flat",
+        bd=0,
     )
+    entrada_funcion.pack(fill="x", ipady=10, padx=2, pady=2)
 
-    entrada_funcion.grid(
-        row=0,
-        column=1,
-        pady=15
-    )
+    tk.Label(
+        c1,
+        text="Sintaxis Python  ·  x**2  ·  sin(x)  ·  sqrt(x)  ·  pi  ·  exp(x)",
+        font=("Consolas", 8),
+        bg=C["bg_card"],
+        fg=C["text_low"],
+        anchor="w"
+    ).pack(fill="x", pady=(6, 0))
 
-    # ---------------- LIMITE A ----------------
-
-    label_a = tk.Label(
-        frame_datos,
-        text="Límite inferior (a):",
-        **estilo_label
-    )
-
-    label_a.grid(
-        row=1,
-        column=0,
-        padx=15,
-        pady=15,
-        sticky="w"
-    )
-
-    entrada_a = tk.Entry(
-        frame_datos,
-        **estilo_entry
-    )
-
-    entrada_a.grid(
-        row=1,
-        column=1
-    )
-
-    # ---------------- LIMITE B ----------------
-
-    label_b = tk.Label(
-        frame_datos,
-        text="Límite superior (b):",
-        **estilo_label
-    )
-
-    label_b.grid(
-        row=2,
-        column=0,
-        padx=15,
-        pady=15,
-        sticky="w"
-    )
-
-    entrada_b = tk.Entry(
-        frame_datos,
-        **estilo_entry
-    )
-
-    entrada_b.grid(
-        row=2,
-        column=1
-    )
-
-    # ---------------- PARTICIONES ----------------
-
-    label_n = tk.Label(
-        frame_datos,
-        text="Número de particiones (n):",
-        **estilo_label
-    )
-
-    label_n.grid(
-        row=3,
-        column=0,
-        padx=15,
-        pady=15,
-        sticky="w"
-    )
-
-    entrada_n = tk.Entry(
-        frame_datos,
-        **estilo_entry
-    )
-
-    entrada_n.grid(
-        row=3,
-        column=1
-    )
-
-    # ---------------- FUNCION INSERTAR ----------------
-
+    # — Chips de funciones
     def insertar_funcion(texto):
-
         entrada_funcion.insert(tk.END, texto)
 
-    # ---------------- CONTROL GRAFICA ----------------
+    chips_frame = tk.Frame(c1, bg=C["bg_card"])
+    chips_frame.pack(fill="x", pady=(10, 0))
+
+    chips_data = [
+        ("sin",  "sin(x)"),
+        ("cos",  "cos(x)"),
+        ("tan",  "tan(x)"),
+        ("√",    "sqrt(x)"),
+        ("ln",   "log(x)"),
+        ("eˣ",   "exp(x)"),
+        ("π",    "pi"),
+        ("x²",   "x**2"),
+        ("x³",   "x**3"),
+    ]
+
+    for label, valor in chips_data:
+        btn = tk.Button(
+            chips_frame,
+            text=label,
+            font=("Consolas", 10),
+            bg=C["chip_bg"],
+            fg=C["text_mid"],
+            activebackground=C["chip_active_bg"],
+            activeforeground=C["chip_active_fg"],
+            relief="flat",
+            bd=0,
+            pady=6,
+            padx=12,
+            cursor="hand2",
+            highlightbackground=C["chip_border"],
+            highlightthickness=1,
+            command=lambda v=valor: insertar_funcion(v)
+        )
+        btn.pack(side="left", padx=(0, 5))
+
+        def _enter(e, b=btn):
+            b.config(bg=C["chip_active_bg"], fg=C["chip_active_fg"],
+                     highlightbackground=C["chip_active_bd"])
+
+        def _leave(e, b=btn):
+            b.config(bg=C["chip_bg"], fg=C["text_mid"],
+                     highlightbackground=C["chip_border"])
+
+        btn.bind("<Enter>", _enter)
+        btn.bind("<Leave>", _leave)
+
+    # ────────────────────────────────────────────────
+    #  CARD 2 — PARÁMETROS
+    # ────────────────────────────────────────────────
+
+    c2 = card(ventana, pady=(0, 8), accent_left=True)
+    section_label(c2, "PARÁMETROS DE INTEGRACIÓN", icon="∫")
+
+    params_frame = tk.Frame(c2, bg=C["bg_card"])
+    params_frame.pack(fill="x")
+    params_frame.columnconfigure(0, weight=1)
+    params_frame.columnconfigure(1, weight=1)
+    params_frame.columnconfigure(2, weight=1)
+
+    def param_field(parent, col, label_text, symbol=""):
+        wrap = tk.Frame(parent, bg=C["bg_card"])
+        wrap.grid(row=0, column=col, sticky="ew",
+                  padx=(0, 12) if col < 2 else (0, 0))
+
+        lbl_row = tk.Frame(wrap, bg=C["bg_card"])
+        lbl_row.pack(fill="x", pady=(0, 6))
+
+        if symbol:
+            tk.Label(
+                lbl_row,
+                text=symbol,
+                font=("Consolas", 10),
+                bg=C["bg_card"],
+                fg=C["accent_dim"],
+            ).pack(side="left")
+
+        tk.Label(
+            lbl_row,
+            text=f" {label_text}",
+            font=("Consolas", 8, "bold"),
+            bg=C["bg_card"],
+            fg=C["text_low"],
+        ).pack(side="left")
+
+        e = tk.Entry(
+            wrap,
+            font=("Consolas", 13),
+            bg=C["bg_input"],
+            fg=C["text_hi"],
+            insertbackground=C["accent"],
+            relief="flat",
+            bd=0,
+            highlightbackground=C["border_hi"],
+            highlightthickness=1,
+            highlightcolor=C["accent"]
+        )
+        e.pack(fill="x", ipady=9)
+
+        # Focus glow
+        e.bind("<FocusIn>",  lambda ev, w=e: w.config(highlightbackground=C["border_accent"], fg=C["accent"]))
+        e.bind("<FocusOut>", lambda ev, w=e: w.config(highlightbackground=C["border_hi"],     fg=C["text_hi"]))
+        return e
+
+    entrada_a = param_field(params_frame, 0, "LÍMITE INFERIOR  (a)", symbol="α")
+    entrada_b = param_field(params_frame, 1, "LÍMITE SUPERIOR  (b)", symbol="β")
+    entrada_n = param_field(params_frame, 2, "PARTICIONES  (n)",     symbol="n")
+
+    # ────────────────────────────────────────────────
+    #  BOTONES DE ACCIÓN
+    # ────────────────────────────────────────────────
+
+    btn_outer = tk.Frame(ventana, bg=C["bg_app"])
+    btn_outer.pack(fill="x", padx=26, pady=(4, 10))
+
+    btn_frame = tk.Frame(btn_outer, bg=C["bg_app"])
+    btn_frame.pack(fill="x")
+    btn_frame.columnconfigure(0, weight=3)
+    btn_frame.columnconfigure(1, weight=2)
+    btn_frame.columnconfigure(2, weight=2)
 
     grafica_habilitada = False
 
-    # ---------------- FUNCION CALCULAR ----------------
+    def _set_grafica(activo):
+        nonlocal grafica_habilitada
+        grafica_habilitada = activo
+        if activo:
+            boton_grafica.config(
+                bg=C["green_dim"],
+                fg=C["green"],
+                highlightbackground=C["green_border"],
+                state="normal"
+            )
+        else:
+            boton_grafica.config(
+                bg=C["bg_card"],
+                fg=C["text_low"],
+                highlightbackground=C["border_hi"],
+                state="disabled"
+            )
+
+    def _make_action_btn(parent, col, text, color_fg, color_bd,
+                         color_bg=None, cmd=None, state="normal", padx_extra=(0, 8)):
+        bg = color_bg or C["bg_card"]
+        b = tk.Button(
+            parent,
+            text=text,
+            font=("Consolas", 10, "bold"),
+            bg=bg,
+            fg=color_fg,
+            activebackground=C["bg_input"],
+            activeforeground=color_fg,
+            relief="flat",
+            bd=0,
+            pady=12,
+            cursor="hand2",
+            state=state,
+            highlightbackground=color_bd,
+            highlightthickness=1,
+            command=cmd
+        )
+        b.grid(row=0, column=col, sticky="ew",
+               padx=padx_extra)
+        return b
+
+    # ────────────────────────────────────────────────
+    #  LÓGICA: CALCULAR
+    # ────────────────────────────────────────────────
 
     def calcular():
-
         nonlocal grafica_habilitada
-
         try:
+            metodo    = combo_metodos.get()
+            expresion = entrada_funcion.get().strip()
 
-            metodo = combo_metodos.get()
-
-            expresion = entrada_funcion.get()
-
-            if expresion == "":
-
-                messagebox.showerror(
-                    "Error",
-                    "Debe ingresar una función."
-                )
-
+            if not expresion:
+                messagebox.showerror("Error", "Debe ingresar una función.")
                 return
 
             funcion = convertir_funcion(expresion)
-
             a = float(entrada_a.get())
-
             b = float(entrada_b.get())
-
             n = int(entrada_n.get())
 
             if n <= 0:
-
-                messagebox.showerror(
-                    "Error",
-                    "n debe ser mayor que cero."
-                )
-
+                messagebox.showerror("Error", "n debe ser mayor que cero.")
                 return
 
+            texto_resultados.config(state="normal")
             texto_resultados.delete(1.0, tk.END)
 
-            # ---------------- TRAPECIO ----------------
+            mapa = {
+                "Trapecio":        (metodo_trapecio,        "MÉTODO TRAPECIO"),
+                "Simpson 1/3":     (metodo_simpson_13,      "MÉTODO SIMPSON 1/3"),
+                "Jorge Boole":     (metodo_boole,           "MÉTODO JORGE BOOLE"),
+                "Simpson Abierto": (metodo_simpson_abierto, "SIMPSON ABIERTO"),
+            }
 
-            if metodo == "Trapecio":
+            if metodo in mapa:
+                fn_metodo, titulo = mapa[metodo]
+                resultado, x, y, h = fn_metodo(funcion, a, b, n)
 
-                resultado, x, y, h = metodo_trapecio(
-                    funcion,
-                    a,
-                    b,
-                    n
-                )
+                texto_resultados.insert(tk.END, f"\n  ◆ {titulo}\n",  "header")
+                texto_resultados.insert(tk.END,  "  " + "─" * 46 + "\n", "dim")
+                texto_resultados.insert(tk.END, f"  h  =  {h}\n\n",   "sub")
 
-                texto_resultados.insert(
-                    tk.END,
-                    "========== MÉTODO TRAPECIO ==========\n\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"h = {h}\n\n"
-                )
+                # ── Tabla de valores
+                texto_resultados.insert(tk.END, "   i      xi              f(xi)\n", "col_header")
+                texto_resultados.insert(tk.END, "  " + "─" * 46 + "\n", "dim")
 
                 for i in range(len(x)):
+                    texto_resultados.insert(tk.END, f"  {i:<5}", "key")
+                    texto_resultados.insert(tk.END, f"  {x[i]:<16.6f}", "val")
+                    texto_resultados.insert(tk.END, f"  {y[i]:.6f}\n",  "val")
 
-                    texto_resultados.insert(
-                        tk.END,
-                        f"x{i} = {x[i]:.6f}      "
-                        f"f(x{i}) = {y[i]:.6f}\n"
-                    )
+                texto_resultados.insert(tk.END,  "  " + "─" * 46 + "\n\n", "dim")
+                texto_resultados.insert(tk.END,  "  RESULTADO  ≈  ", "sub")
+                texto_resultados.insert(tk.END, f"{resultado}\n\n", "result")
 
-                texto_resultados.insert(
-                    tk.END,
-                    "\n-------------------------------------\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"Resultado aproximado = {resultado}"
-                )
-
-                grafica_habilitada = True
-
-                boton_grafica.config(
-                    state="normal",
-                    bg="#22c55e"
-                )
-                
-            # ---------------- SIMPSON 1/3 ----------------
-
-            elif metodo == "Simpson 1/3":
-
-                resultado, x, y, h = metodo_simpson_13(
-                    funcion,
-                    a,
-                    b,
-                    n
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    "========== MÉTODO SIMPSON 1/3 ==========\n\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"h = {h}\n\n"
-                )
-
-                for i in range(len(x)):
-
-                    texto_resultados.insert(
-                        tk.END,
-                        f"x{i} = {x[i]:.6f}      "
-                        f"f(x{i}) = {y[i]:.6f}\n"
-                    )
-
-                texto_resultados.insert(
-                    tk.END,
-                    "\n-------------------------------------\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"Resultado aproximado = {resultado}"
-                )
-
-                grafica_habilitada = True
-
-                boton_grafica.config(
-                    state="normal",
-                    bg="#22c55e"
-                )
-                
-                
-            # ---------------- JORGE BOOLE ----------------
-
-            elif metodo == "Jorge Boole":
-
-                resultado, x, y, h = metodo_boole(
-                    funcion,
-                    a,
-                    b,
-                    n
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    "========== MÉTODO JORGE BOOLE ==========\n\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"h = {h}\n\n"
-                )
-
-                for i in range(len(x)):
-
-                    texto_resultados.insert(
-                        tk.END,
-                        f"x{i} = {x[i]:.6f}      "
-                        f"f(x{i}) = {y[i]:.6f}\n"
-                    )
-
-                texto_resultados.insert(
-                    tk.END,
-                    "\n-------------------------------------\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"Resultado aproximado = {resultado}"
-                )
-
-                grafica_habilitada = True
-
-                boton_grafica.config(
-                    state="normal",
-                    bg="#22c55e"
-                )
-                
-                
-            # ---------------- SIMPSON ABIERTO ----------------
-
-            elif metodo == "Simpson Abierto":
-
-                resultado, x, y, h = metodo_simpson_abierto(
-                    funcion,
-                    a,
-                    b,
-                    n
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    "========== SIMPSON ABIERTO ==========\n\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"h = {h}\n\n"
-                )
-
-                for i in range(len(x)):
-
-                    texto_resultados.insert(
-                        tk.END,
-                        f"x{i} = {x[i]:.6f}      "
-                        f"f(x{i}) = {y[i]:.6f}\n"
-                    )
-
-                texto_resultados.insert(
-                    tk.END,
-                    "\n-------------------------------------\n"
-                )
-
-                texto_resultados.insert(
-                    tk.END,
-                    f"Resultado aproximado = {resultado}"
-                )
-
-                grafica_habilitada = True
-
-                boton_grafica.config(
-                    state="normal",
-                    bg="#22c55e"
-                )
-
-            # ---------------- SIMPSON 3/8 ----------------
+                _set_grafica(True)
+                indicador.config(text="● calculado", fg=C["green"])
 
             elif metodo == "Simpson 3/8":
-
                 texto_resultados.insert(
                     tk.END,
-                    "Este método será implementado "
-                    "por otro integrante del equipo."
-                )
-
+                    "\n  Simpson 3/8 — pendiente de implementación.\n", "sub")
+                _set_grafica(False)
+                indicador.config(text="● en espera", fg=C["text_low"])
             else:
-
                 texto_resultados.insert(
-                    tk.END,
-                    "Método aún no implementado."
-                )
+                    tk.END, "\n  Método aún no implementado.\n", "sub")
+                _set_grafica(False)
+                indicador.config(text="● sin datos", fg=C["text_low"])
+
+            texto_resultados.config(state="disabled")
 
         except Exception as error:
+            messagebox.showerror("Error", f"Ocurrió un problema:\n\n{error}")
+            indicador.config(text="● error", fg=C["red_text"])
 
-            messagebox.showerror(
-                "Error",
-                f"Ocurrió un problema:\n\n{error}"
-            )
-
-    # ---------------- FUNCION GRAFICAR ----------------
+    # ────────────────────────────────────────────────
+    #  LÓGICA: GRAFICAR
+    # ────────────────────────────────────────────────
 
     def mostrar_grafica():
-
         if not grafica_habilitada:
             return
-
         expresion = entrada_funcion.get()
-
-        funcion = convertir_funcion(expresion)
-
+        funcion   = convertir_funcion(expresion)
         a = float(entrada_a.get())
-
         b = float(entrada_b.get())
+        graficar_funcion(funcion, a, b)
 
-        graficar_funcion(
-            funcion,
-            a,
-            b
-        )
-        
+    # ────────────────────────────────────────────────
+    #  LÓGICA: LIMPIAR
+    # ────────────────────────────────────────────────
+
     def limpiar():
-
-        nonlocal grafica_habilitada
-
         entrada_funcion.delete(0, tk.END)
-
         entrada_a.delete(0, tk.END)
-
         entrada_b.delete(0, tk.END)
-
         entrada_n.delete(0, tk.END)
-
+        texto_resultados.config(state="normal")
         texto_resultados.delete(1.0, tk.END)
+        texto_resultados.config(state="disabled")
+        _set_grafica(False)
+        indicador.config(text="● listo", fg=C["text_low"])
 
-        grafica_habilitada = False
-
-        boton_grafica.config(
-            state="disabled",
-            bg="#334155"
-        )
-
-
-    # ---------------- FRAME BOTONES ----------------
-
-    frame_botones = tk.Frame(
-        frame_principal,
-        bg="#111827"
+    # ── Crear botones
+    boton_calcular = _make_action_btn(
+        btn_frame, 0, "⬡  CALCULAR",
+        C["accent"], C["border_accent"],
+        color_bg=C["accent_glow"],
+        cmd=calcular,
+        padx_extra=(0, 8)
+    )
+    boton_grafica = _make_action_btn(
+        btn_frame, 1, "◈  GRAFICAR",
+        C["text_low"], C["border_hi"],
+        cmd=mostrar_grafica, state="disabled",
+        padx_extra=(0, 8)
+    )
+    boton_limpiar = _make_action_btn(
+        btn_frame, 2, "✕  LIMPIAR",
+        C["red_text"], C["red_border"],
+        cmd=limpiar,
+        padx_extra=(0, 0)
     )
 
-    frame_botones.pack(pady=10)
-    
-        # ---------------- FUNCION LIMPIAR ----------------
+    # Hover effects
+    def _hover(btn, fg_in, bd_in, fg_out, bd_out, bg_in=None, bg_out=None):
+        def on_enter(e):
+            btn.config(fg=fg_in, highlightbackground=bd_in)
+            if bg_in:
+                btn.config(bg=bg_in)
+        def on_leave(e):
+            btn.config(fg=fg_out, highlightbackground=bd_out)
+            if bg_out:
+                btn.config(bg=bg_out)
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
 
+    _hover(boton_calcular, C["text_hi"], C["accent"],
+           C["accent"], C["border_accent"],
+           bg_in=C["accent_glow"], bg_out=C["accent_glow"])
+    _hover(boton_limpiar,  C["red_hover"], C["red_hover"],
+           C["red_text"], C["red_border"])
 
-    # ---------------- HOVER ----------------
+    # ────────────────────────────────────────────────
+    #  CARD 3 — RESULTADOS
+    # ────────────────────────────────────────────────
 
-    def on_enter(e):
-        e.widget["bg"] = "#0ea5e9"
-
-    def on_leave(e):
-        e.widget["bg"] = "#1d4ed8"
-
-    # ---------------- ESTILO BOTONES ----------------
-
-    estilo_boton = {
-        "width": 9,
-        "font": ("Segoe UI", 10, "bold"),
-        "bg": "#1d4ed8",
-        "fg": "white",
-        "activebackground": "#0ea5e9",
-        "activeforeground": "white",
-        "relief": "flat",
-        "cursor": "hand2",
-        "bd": 0,
-        "pady": 8
-    }
-
-    # ---------------- BOTONES MATEMATICOS ----------------
-
-    botones = [
-        ("sin", "sin(x)", 0, 0),
-        ("cos", "cos(x)", 0, 1),
-        ("tan", "tan(x)", 0, 2),
-        ("√", "sqrt(x)", 0, 3),
-        ("log", "log(x)", 0, 4),
-        ("exp", "exp(x)", 1, 0),
-        ("π", "pi", 1, 1),
-        ("x²", "x**2", 1, 2)
-    ]
-
-    for texto, valor, fila, columna in botones:
-
-        boton = tk.Button(
-            frame_botones,
-            text=texto,
-            command=lambda v=valor: insertar_funcion(v),
-            **estilo_boton
-        )
-
-        boton.grid(
-            row=fila,
-            column=columna,
-            padx=8,
-            pady=8
-        )
-
-        boton.bind("<Enter>", on_enter)
-
-        boton.bind("<Leave>", on_leave)
-
-    # ---------------- FRAME ACCIONES ----------------
-
-    frame_acciones = tk.Frame(
-        frame_principal,
-        bg="#111827"
+    c3_outer = tk.Frame(
+        ventana,
+        bg=C["border_hi"],
+        bd=0
     )
+    c3_outer.pack(fill="x", padx=26, pady=(0, 22))
 
-    frame_acciones.pack(pady=(15, 25))
+    # Barra cian izquierda
+    tk.Frame(c3_outer, bg=C["accent"], width=3).pack(side="left", fill="y")
 
-    # ---------------- BOTON CALCULAR ----------------
+    c3_inner = tk.Frame(c3_outer, bg=C["bg_card"])
+    c3_inner.pack(fill="x", expand=True)
 
-    boton_calcular = tk.Button(
-        frame_acciones,
-        text="CALCULAR",
-        bg="#0ea5e9",
-        fg="white",
-        activebackground="#38bdf8",
-        activeforeground="white",
-        font=("Segoe UI", 12, "bold"),
-        width=18,
-        relief="flat",
-        bd=0,
-        pady=10,
-        cursor="hand2",
-        command=calcular
+    c3 = tk.Frame(c3_inner, bg=C["bg_card"])
+    c3.pack(fill="x", padx=22, pady=18)
+
+    # Fila título + indicador
+    res_header = tk.Frame(c3, bg=C["bg_card"])
+    res_header.pack(fill="x", pady=(0, 10))
+
+    tk.Label(
+        res_header,
+        text="▸ CONSOLA DE RESULTADOS",
+        font=("Consolas", 9, "bold"),
+        bg=C["bg_card"],
+        fg=C["text_low"]
+    ).pack(side="left")
+
+    indicador = tk.Label(
+        res_header,
+        text="● listo",
+        font=("Consolas", 9),
+        bg=C["bg_card"],
+        fg=C["text_low"]
     )
+    indicador.pack(side="right")
 
-    boton_calcular.grid(
-        row=0,
-        column=0,
-        padx=10
+    # Marco del text widget
+    text_frame = tk.Frame(
+        c3,
+        bg=C["border_hi"],
+        highlightbackground=C["border_hi"],
+        highlightthickness=1,
+        bd=0
     )
-
-    # ---------------- BOTON GRAFICAR ----------------
-
-    boton_grafica = tk.Button(
-        frame_acciones,
-        text="GRAFICAR",
-        bg="#334155",
-        fg="white",
-        activebackground="#22c55e",
-        activeforeground="white",
-        font=("Segoe UI", 12, "bold"),
-        width=18,
-        relief="flat",
-        bd=0,
-        pady=10,
-        cursor="hand2",
-        state="disabled",
-        command=mostrar_grafica
-    )
-
-    boton_grafica.grid(
-        row=0,
-        column=1,
-        padx=10
-    )
-    
-        # ---------------- BOTON LIMPIAR ----------------
-
-    boton_limpiar = tk.Button(
-        frame_acciones,
-        text="LIMPIAR",
-        bg="#ef4444",
-        fg="white",
-        activebackground="#f87171",
-        activeforeground="white",
-        font=("Segoe UI", 12, "bold"),
-        width=18,
-        relief="flat",
-        bd=0,
-        pady=10,
-        cursor="hand2",
-        command=limpiar
-    )
-
-    boton_limpiar.grid(
-        row=0,
-        column=2,
-        padx=10
-    )
-
-    # ---------------- RESULTADOS ----------------
-
-    label_resultados = tk.Label(
-        frame_principal,
-        text="Resultados",
-        font=("Segoe UI", 15, "bold"),
-        bg="#111827",
-        fg="#38bdf8"
-    )
-
-    label_resultados.pack(pady=(10, 10))
+    text_frame.pack(fill="both", expand=True)
 
     texto_resultados = tk.Text(
-        frame_principal,
-        width=95,
-        height=14,
+        text_frame,
+        width=1,
+        height=15,
         font=("Consolas", 11),
-        bg="#0f172a",
-        fg="#e2e8f0",
-        insertbackground="white",
+        bg=C["bg_result"],
+        fg=C["text_mid"],
+        insertbackground=C["accent"],
         relief="flat",
-        bd=10
+        bd=0,
+        selectbackground=C["accent_glow"],
+        selectforeground=C["text_hi"],
+        spacing1=3,
+        spacing3=3,
+        state="disabled",
+        padx=8,
+        pady=8
     )
+    texto_resultados.pack(fill="both", expand=True)
 
-    texto_resultados.pack(pady=10)
+    # Tags de color para el texto de resultados
+    texto_resultados.tag_configure("header",
+                                   foreground=C["accent"],
+                                   font=("Consolas", 12, "bold"))
+    texto_resultados.tag_configure("col_header",
+                                   foreground=C["text_low"],
+                                   font=("Consolas", 10, "bold"))
+    texto_resultados.tag_configure("sub",
+                                   foreground=C["text_low"],
+                                   font=("Consolas", 11))
+    texto_resultados.tag_configure("key",
+                                   foreground=C["accent_dim"],
+                                   font=("Consolas", 11))
+    texto_resultados.tag_configure("val",
+                                   foreground=C["text_mid"],
+                                   font=("Consolas", 11))
+    texto_resultados.tag_configure("result",
+                                   foreground=C["accent"],
+                                   font=("Consolas", 14, "bold"))
+    texto_resultados.tag_configure("dim",
+                                   foreground=C["border_hi"],
+                                   font=("Consolas", 10))
 
-    # ---------------- MAINLOOP ----------------
+    # ────────────────────────────────────────────────
+    #  FOOTER
+    # ────────────────────────────────────────────────
+
+    footer = tk.Frame(ventana, bg=C["bg_app"])
+    footer.pack(fill="x", padx=26, pady=(0, 14))
+
+    tk.Frame(footer, bg=C["sep_line"], height=1).pack(fill="x", pady=(0, 8))
+
+    tk.Label(
+        footer,
+        text="Métodos Numéricos  ·  Cálculo Diferencial e Integral  ·  2025",
+        font=("Consolas", 8),
+        bg=C["bg_app"],
+        fg=C["text_low"]
+    ).pack(side="left")
+
+    tk.Label(
+        footer,
+        text="Python  +  Tkinter",
+        font=("Consolas", 8),
+        bg=C["bg_app"],
+        fg=C["text_low"]
+    ).pack(side="right")
+
+    # ────────────────────────────────────────────────
+    #  MAINLOOP
+    # ────────────────────────────────────────────────
 
     ventana.mainloop()
